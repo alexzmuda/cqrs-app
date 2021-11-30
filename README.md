@@ -1,7 +1,10 @@
 # Test Task
 
 CQRS architecture example,
-Three modules Product, Order, Cart 
+Three modules Product, Order, Cart.
+
+Seeders included.
+
 
 
 To set up locally, you need to have docker
