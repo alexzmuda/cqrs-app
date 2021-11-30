@@ -1,6 +1,7 @@
 <?php
 
-use Illuminate\Http\Request;
+use App\Modules\Cart\Http\Controllers\CartController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -13,6 +14,7 @@ use Illuminate\Http\Request;
 |
 */
 
-Route::middleware('auth:api')->get('/cart', function (Request $request) {
-    return $request->user();
+// recipes
+Route::group(['middleware' => [], 'prefix' => 'v1'], function () {
+    Route::post('/cart', [CartController::class, 'index']);
 });

@@ -44,7 +44,7 @@ final class LazyCommandRegistry implements CommandRegistry
         );
     }
 
-    public function handle(Command $command): ?int
+    public function handle(Command $command)
     {
         $commandClass = get_class($command);
 

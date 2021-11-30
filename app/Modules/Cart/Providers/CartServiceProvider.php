@@ -2,6 +2,9 @@
 
 namespace App\Modules\Cart\Providers;
 
+use App\Infrastructure\CQRS\RegisterCommandHandler;
+use App\Infrastructure\CQRS\RegisterQueryHandler;
+use App\Modules\Cart\Services\CQRS\Handlers\CartCommandHandler;
 use Illuminate\Support\ServiceProvider;
 
 class CartServiceProvider extends ServiceProvider
@@ -37,6 +40,11 @@ class CartServiceProvider extends ServiceProvider
     public function register()
     {
         $this->app->register(RouteServiceProvider::class);
+
+        $registerCommandHandler = new RegisterCommandHandler($this->app);
+
+        ### Commands
+        $registerCommandHandler(CartCommandHandler::class);
     }
 
     /**

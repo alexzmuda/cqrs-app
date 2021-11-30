@@ -18,5 +18,5 @@ interface CommandHandler
      * @param CommandRegistry $registry
      * @return int|null Can return some ID - it's up to handler
      */
-    public function handle(Command $command, CommandRegistry $registry): ?int;
+    public function handle(Command $command, CommandRegistry $registry);
 }

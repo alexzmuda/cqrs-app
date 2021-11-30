@@ -34,6 +34,20 @@ final class EloquentProductRepository implements ProductRepository
         return $product;
     }
 
+    public function findByCode(string $productCode): Product
+    {
+        /** @var Product|null $product */
+        $product = Product::query()
+            ->whereCode($productCode)
+            ->first();
+
+        if ($product === null) {
+            throw new ProductNotFoundException($productCode);
+        }
+
+        return $product;
+    }
+
     public function delete(Product $product): void
     {
         $product->delete();

@@ -16,11 +16,14 @@ interface ProductRepository
 {
     public function index(): Collection;
 
-    public function store(Product $ingredient): void;
+    public function store(Product $product): void;
 
     /** @throws ProductNotFoundException */
-    public function findById(int $ingredient): Product;
+    public function findById(int $productId): Product;
 
-    public function delete(Product $ingredient): void;
+    /** @throws ProductNotFoundException */
+    public function findByCode(string $productCode): Product;
+
+    public function delete(Product $product): void;
 
 }
