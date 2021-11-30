@@ -101,7 +101,7 @@ final class CartCommandHandler implements CommandHandler
         return $cart_processed;
     }
 
-    private function calculateDeliveryFee($amount)
+    private function calculateDeliveryFee($amount): float
     {
         if ($amount < 50) {
             return 4.95;
