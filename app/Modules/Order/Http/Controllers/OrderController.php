@@ -42,7 +42,7 @@ class OrderController extends Controller
     {
         $orders = $this->queryRegistry
             ->handle(new FetchOrdersQuery(
-                Auth::user()->getKey()
+               // Auth::user()->getKey()
             ));
 
         return response(OrderTransformer::collection($orders))
