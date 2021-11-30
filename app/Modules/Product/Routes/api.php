@@ -1,6 +1,7 @@
 <?php
 
-use Illuminate\Http\Request;
+use App\Modules\Product\Http\Controllers\ProductController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -13,6 +14,11 @@ use Illuminate\Http\Request;
 |
 */
 
-Route::middleware('auth:api')->get('/product', function (Request $request) {
-    return $request->user();
+// recipes
+Route::group(['middleware' => [], 'prefix' => 'v1'], function () {
+    Route::match(['get'], '/products', [ProductController::class, 'index']);
+    Route::post('/product', [ProductController::class, 'create']);
+    Route::get('/product/{id}', [ProductController::class, 'show']);
+    Route::put('/product', [ProductController::class, 'update']);
+    Route::delete('/product/{id}', [ProductController::class, 'destroy']);
 });
