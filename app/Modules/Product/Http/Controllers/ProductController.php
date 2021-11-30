@@ -15,7 +15,6 @@ use App\Modules\Product\Http\Requests\CreateProductRequest;
 use App\Modules\Product\Http\Transformers\ProductTransformer;
 use App\Modules\Product\Services\CQRS\CommandFactories\CreateProductCommandFactory;
 use App\Modules\Product\Services\CQRS\Commands\DestroyProductCommand;
-use App\Modules\Product\Services\CQRS\Queries\FetchProductsByDomainIdQuery;
 use App\Modules\Product\Services\CQRS\Queries\FetchProductsQuery;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Database\QueryException;
@@ -37,7 +36,7 @@ class ProductController extends Controller
     }
 
     /**
-     * Display a listing of the day plans.
+     * Display a listing of products
      * @return Response
      */
     public function index(): Response
@@ -79,13 +78,15 @@ class ProductController extends Controller
             return response($e->getMessage(), Response::HTTP_NOT_FOUND);
         }
 
-        $policy = Gate::inspect('viewProduct', $order);
+        return response(new ProductTransformer($order), Response::HTTP_CREATED);
 
-        if ($policy->allowed()) {
-            return response(new ProductTransformer($order), Response::HTTP_CREATED);
-        } else {
-            return response($policy->message(), Response::HTTP_FORBIDDEN);
-        }
+        //$policy = Gate::inspect('viewProduct', $order);
+
+        //if ($policy->allowed()) {
+        // return response(new ProductTransformer($order), Response::HTTP_CREATED);
+        //      } else {
+        //        return response($policy->message(), Response::HTTP_FORBIDDEN);
+        //  }
     }
 
     /**

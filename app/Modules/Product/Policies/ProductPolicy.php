@@ -33,7 +33,7 @@ class ProductPolicy
     public function deleteProduct(User $user, Product $model)
     {
         // only admin can delete
-        return ($user->getKey() === 1) // hardcoded id of admin
+        return ($user->getKey() === 1) // hardcoded id of admin, bearer req
             ? Response::allow()
             : Response::deny('Only admin can delete products');
     }
