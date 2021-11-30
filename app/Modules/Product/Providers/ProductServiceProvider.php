@@ -2,6 +2,16 @@
 
 namespace App\Modules\Product\Providers;
 
+use App\Infrastructure\CQRS\RegisterCommandHandler;
+use App\Infrastructure\CQRS\RegisterQueryHandler;
+use App\Modules\Product\Providers\RouteServiceProvider;
+use App\Modules\Product\Repositories\EloquentProductRepository;
+use App\Modules\Product\Repositories\Interfaces\ProductRepository;
+use App\Modules\Product\Services\CQRS\Handlers\CreateProductCommandHandler;
+use App\Modules\Product\Services\CQRS\Handlers\DestroyProductCommandHandler;
+use App\Modules\Product\Services\CQRS\Handlers\FetchProductByIdQueryHandler;
+use App\Modules\Product\Services\CQRS\Handlers\FetchProductsQueryHandler;
+use App\Modules\Product\Services\CQRS\Handlers\UpdateProductCommandHandler;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Database\Eloquent\Factory;
 
@@ -38,6 +48,21 @@ class ProductServiceProvider extends ServiceProvider
     public function register()
     {
         $this->app->register(RouteServiceProvider::class);
+
+        $registerCommandHandler = new RegisterCommandHandler($this->app);
+        $registerQueryHandler = new RegisterQueryHandler($this->app);
+
+        ### Commands
+        $registerCommandHandler(CreateProductCommandHandler::class);
+        $registerCommandHandler(UpdateProductCommandHandler::class);
+        $registerCommandHandler(DestroyProductCommandHandler::class);
+
+        ### Queries
+        $registerQueryHandler(FetchProductsQueryHandler::class);
+        $registerQueryHandler(FetchProductByIdQueryHandler::class);
+
+        ### Repositories
+        $this->app->singleton(ProductRepository::class, EloquentProductRepository::class);
     }
 
     /**

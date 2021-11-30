@@ -2,78 +2,172 @@
 
 namespace App\Modules\Product\Http\Controllers;
 
-use Illuminate\Contracts\Support\Renderable;
-use Illuminate\Http\Request;
+use App\Exceptions\InvalidParameterException;
+use App\Infrastructure\CQRS\CommandRegistry;
+use App\Infrastructure\CQRS\QueryRegistry;
+use App\Infrastructure\Exceptions\InvalidFormRequestException;
+use App\Modules\Product\Exceptions\ProductNotFoundException;
+use App\Modules\Product\Http\Requests\UpdateProductRequest;
+use App\Modules\Product\Models\Product;
+use App\Modules\Product\Services\CQRS\CommandFactories\UpdateProductCommandFactory;
+use App\Modules\Product\Services\CQRS\Queries\FetchProductByIdQuery;
+use App\Modules\Product\Http\Requests\CreateProductRequest;
+use App\Modules\Product\Http\Transformers\ProductTransformer;
+use App\Modules\Product\Services\CQRS\CommandFactories\CreateProductCommandFactory;
+use App\Modules\Product\Services\CQRS\Commands\DestroyProductCommand;
+use App\Modules\Product\Services\CQRS\Queries\FetchProductsByDomainIdQuery;
+use App\Modules\Product\Services\CQRS\Queries\FetchProductsQuery;
+use Illuminate\Contracts\Support\Responsable;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Routing\Controller;
+use Symfony\Component\HttpFoundation\Response;
 
 class ProductController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     * @return Renderable
-     */
-    public function index()
+    private CommandRegistry $commandRegistry;
+    private QueryRegistry $queryRegistry;
+
+
+    public function __construct(CommandRegistry $commandRegistry, QueryRegistry $queryRegistry)
     {
-        return view('product::index');
+        $this->commandRegistry = $commandRegistry;
+        $this->queryRegistry = $queryRegistry;
     }
 
     /**
-     * Show the form for creating a new resource.
-     * @return Renderable
+     * Display a listing of the day plans.
+     * @return Response
      */
-    public function create()
+    public function index(): Response
     {
-        return view('product::create');
+        $orders = $this->queryRegistry
+            ->handle(new FetchProductsQuery(
+            // Auth::user()->getKey()
+            ));
+
+        return response(ProductTransformer::collection($orders))
+            ->setStatusCode(Response::HTTP_OK);
     }
 
     /**
-     * Store a newly created resource in storage.
-     * @param Request $request
-     * @return Renderable
+     * @param CreateProductRequest $request
+     * @return Response
+     * @throws InvalidParameterException
+     * @throws InvalidFormRequestException
+     * @throws ProductNotFoundException
      */
-    public function store(Request $request)
+    public function create(CreateProductRequest $request, CreateProductCommandFactory $factory): Response
     {
-        //
+        try {
+            $orderId = $this->commandRegistry
+                ->handle($factory->createFromRequest($request));
+        } catch (QueryException $e) {
+            $error_code = $e->errorInfo[1];
+            if ($error_code == 1062) {
+                return response($e->getMessage(), Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
+        }
+
+
+        /** @var Product $order */
+        try {
+            $order = $this->queryRegistry
+                ->handle(new FetchProductByIdQuery($orderId));
+        } catch (ProductNotFoundException $e) {
+            return response($e->getMessage(), Response::HTTP_NOT_FOUND);
+        }
+
+        $policy = Gate::inspect('viewProduct', $order);
+
+        if ($policy->allowed()) {
+            return response(new ProductTransformer($order), Response::HTTP_CREATED);
+        } else {
+            return response($policy->message(), Response::HTTP_FORBIDDEN);
+        }
     }
 
     /**
      * Show the specified resource.
+     *
      * @param int $id
-     * @return Renderable
+     * @return Response
+     * @throws ProductNotFoundException
      */
-    public function show($id)
+    public function show(int $id): Response
     {
-        return view('product::show');
-    }
+        /** @var Product $order */
+        try {
+            $order = $this->queryRegistry
+                ->handle(new FetchProductByIdQuery($id));
+        } catch (ProductNotFoundException $e) {
+            return response($e->getMessage(), Response::HTTP_NOT_FOUND);
+        }
 
-    /**
-     * Show the form for editing the specified resource.
-     * @param int $id
-     * @return Renderable
-     */
-    public function edit($id)
-    {
-        return view('product::edit');
+        $policy = Gate::inspect('viewProduct', $order);
+
+        if ($policy->allowed()) {
+            return response(new ProductTransformer($order), Response::HTTP_OK);
+        } else {
+            return response($policy->message(), Response::HTTP_FORBIDDEN);
+        }
     }
 
     /**
      * Update the specified resource in storage.
-     * @param Request $request
+     * @param UpdateProductRequest $request
      * @param int $id
-     * @return Renderable
+     * @return Responsable
+     * @throws ProductNotFoundException
      */
-    public function update(Request $request, $id)
+    public function update(UpdateProductRequest $request, UpdateProductCommandFactory $factory): Response
     {
-        //
-    }
+        /** @var Product $product */
+        try {
+            $product = $this->queryRegistry
+                ->handle(new FetchProductByIdQuery($request->id));
+        } catch (ProductNotFoundException $e) {
+            return response($e->getMessage(), Response::HTTP_NOT_FOUND);
+        }
 
+        $policy = Gate::inspect('updateProduct', $product);
+
+        if ($policy->allowed()) {
+            $this->commandRegistry
+                ->handle($factory->createFromRequest($request));
+
+            return response(
+                null,
+                Response::HTTP_NO_CONTENT
+            );
+        } else {
+            return response($policy->message(), Response::HTTP_FORBIDDEN);
+        }
+    }
     /**
-     * Remove the specified resource from storage.
+     * Delete the specified resource from storage.
      * @param int $id
-     * @return Renderable
+     * @return Response
+     * @throws ProductNotFoundException
      */
-    public function destroy($id)
+    public function destroy(int $id)
     {
-        //
+        /** @var Product $order */
+        try {
+            $order = $this->queryRegistry
+                ->handle(new FetchProductByIdQuery($id));
+        } catch (ProductNotFoundException $e) {
+            return response($e->getMessage(), Response::HTTP_NOT_FOUND);
+        }
+
+        $policy = Gate::inspect('deleteProduct', $order);
+
+        if ($policy->allowed()) {
+            $this->commandRegistry->handle(new DestroyProductCommand($order));
+            return response("", Response::HTTP_NO_CONTENT);
+        } else {
+            return response($policy->message(), Response::HTTP_FORBIDDEN);
+        }
     }
 }
