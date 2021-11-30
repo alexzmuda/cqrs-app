@@ -105,13 +105,15 @@ class ProductController extends Controller
             return response($e->getMessage(), Response::HTTP_NOT_FOUND);
         }
 
-        $policy = Gate::inspect('viewProduct', $order);
+        return response(new ProductTransformer($order), Response::HTTP_OK);
 
-        if ($policy->allowed()) {
-            return response(new ProductTransformer($order), Response::HTTP_OK);
-        } else {
-            return response($policy->message(), Response::HTTP_FORBIDDEN);
-        }
+        // $policy = Gate::inspect('viewProduct', $order);
+
+        //if ($policy->allowed()) {
+        //     return response(new ProductTransformer($order), Response::HTTP_OK);
+        // } else {
+        //     return response($policy->message(), Response::HTTP_FORBIDDEN);
+        // }
     }
 
     /**
@@ -145,6 +147,7 @@ class ProductController extends Controller
             return response($policy->message(), Response::HTTP_FORBIDDEN);
         }
     }
+
     /**
      * Delete the specified resource from storage.
      * @param int $id
